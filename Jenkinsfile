@@ -4,7 +4,9 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git branch: 'main', url: 'https://github.com/azumahjoshua/jenkins-cicd-demo.git'
+                checkout([$class: 'GitSCM', branches: [[name: 'main']], 
+                          userRemoteConfigs: [[url: 'https://github.com/azumahjoshua/jenkins-cicd-demo.git']]
+                ])
             }
         }
 
@@ -16,11 +18,26 @@ pipeline {
                 }
             }
         }
+
+        stage('Test Nginx') {
+            steps {
+                script {
+                    sh 'sleep 5'  // Give some time for Nginx to start
+                    sh 'curl -I http://localhost:6060 || exit 1'
+                }
+            }
+        }
     }
 
     post {
+        success {
+            echo 'Deployment Successful!'
+        }
+        failure {
+            echo 'Deployment Failed!'
+        }
         always {
-            echo 'Deployment complete!'
+            echo 'Pipeline execution completed.'
         }
     }
 }
