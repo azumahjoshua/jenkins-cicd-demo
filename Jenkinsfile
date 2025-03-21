@@ -3,59 +3,66 @@ pipeline {
 
     environment {
         DOCKER_HUB_CREDENTIALS = credentials('docker-hub-credentials') 
-        DOCKER_IMAGE_NAME = 'joshua192/nodejsapi' // Replace with your Docker Hub image name
-        DOCKER_IMAGE_TAG = 'latest' // Replace with your desired tag
+        DOCKER_IMAGE_NAME = 'joshua192/nodejsapi' 
+        DOCKER_IMAGE_TAG = 'latest'
     }
 
     stages {
-        stage('Clone Repository') {
+        stage('Checkout') {
             steps {
-                checkout([$class: 'GitSCM', branches: [[name: 'main']], 
-                          userRemoteConfigs: [[url: 'https://github.com/azumahjoshua/jenkins-cicd-demo.git']]
-                ])
+                git url: 'https://github.com/azumahjoshua/jenkins-cicd-demo.git', branch: 'main'
+                sh 'pwd'
+                sh 'ls -la'
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                sh 'npm install'
+                dir('app') {  
+                    sh 'npm install'
+                }
             }
         }
 
         stage('Run Tests') {
             steps {
-                sh 'npm test'
+                dir('app') { 
+                    sh 'npm test'
+                }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    dockerImage = docker.build("${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}")
+                dir('app') {
+                    sh "docker build -t ${env.DOCKER_IMAGE_NAME}:${env.DOCKER_IMAGE_TAG} ."
                 }
             }
         }
 
-        stage('Push Docker Image to Docker Hub') {
+        stage('Push Docker Image') {
             steps {
-                script {
-                    docker.withRegistry('https://registry.hub.docker.com', DOCKER_HUB_CREDENTIALS) {
-                        dockerImage.push()
-                    }
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_HUB_USER', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
+                    sh "echo ${env.DOCKER_HUB_PASSWORD} | docker login -u ${env.DOCKER_HUB_USER} --password-stdin"
+                    sh "docker push ${env.DOCKER_IMAGE_NAME}:${env.DOCKER_IMAGE_TAG}"
                 }
+            }
+        }
+
+        // Optional: Docker Compose Stage
+        stage('Deploy with Docker Compose') {
+            steps {
+                sh 'docker-compose up -d'
             }
         }
     }
 
     post {
-        success {
-            echo 'Deployment Successful!'
-        }
         failure {
-            echo 'Deployment Failed!'
+            echo 'Pipeline failed!'
         }
-        always {
-            echo 'Pipeline execution completed.'
+        success {
+            echo 'Pipeline succeeded!'
         }
     }
 }
