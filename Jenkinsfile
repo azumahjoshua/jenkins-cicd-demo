@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB_CREDENTIALS = credentials('jenkins') 
-        DOCKER_IMAGE_NAME = 'joshua192/nodejsapi' 
-        DOCKER_IMAGE_TAG = 'latest' 
+        DOCKER_HUB_CREDENTIALS = credentials('docker-hub-credentials') 
+        DOCKER_IMAGE_NAME = 'joshua192/nodejsapi' // Replace with your Docker Hub image name
+        DOCKER_IMAGE_TAG = 'latest' // Replace with your desired tag
     }
 
     stages {
