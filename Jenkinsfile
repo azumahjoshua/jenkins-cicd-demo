@@ -28,8 +28,9 @@ pipeline {
             steps {
                 dir('app') { 
                     script {
-                        def packageJson = readJSON file: 'package.json'
-                        if (packageJson.scripts.test) {
+                        // Check if the test script exists in package.json using jq
+                        def hasTestScript = sh(script: 'jq -e ".scripts.test" package.json > /dev/null 2>&1', returnStatus: true) == 0
+                        if (hasTestScript) {
                             sh 'npm test'
                         } else {
                             echo 'No test script found in package.json. Skipping tests.'
@@ -56,6 +57,7 @@ pipeline {
             }
         }
 
+        // Optional: Docker Compose Stage
         stage('Deploy with Docker Compose') {
             steps {
                 script {
