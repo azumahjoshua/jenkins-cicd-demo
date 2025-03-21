@@ -27,7 +27,14 @@ pipeline {
         stage('Run Tests') {
             steps {
                 dir('app') { 
-                    sh 'npm test'
+                    script {
+                        def packageJson = readJSON file: 'package.json'
+                        if (packageJson.scripts.test) {
+                            sh 'npm test'
+                        } else {
+                            echo 'No test script found in package.json. Skipping tests.'
+                        }
+                    }
                 }
             }
         }
@@ -49,10 +56,14 @@ pipeline {
             }
         }
 
-        // Optional: Docker Compose Stage
         stage('Deploy with Docker Compose') {
             steps {
-                sh 'docker-compose up -d'
+                script {
+                    // Stop and remove existing containers if they exist
+                    sh 'docker-compose down || true'
+                    // Start new containers
+                    sh 'docker-compose up -d'
+                }
             }
         }
     }
