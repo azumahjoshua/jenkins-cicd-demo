@@ -22,7 +22,7 @@ pipeline {
         stage('Test Nginx') {
             steps {
                 script {
-                    sh 'sleep 5'  // Give some time for Nginx to start
+                    sh 'sleep 5' 
                     sh 'curl -I http://localhost:6060 || exit 1'
                 }
             }
