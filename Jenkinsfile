@@ -1,6 +1,12 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_HUB_CREDENTIALS = credentials('jenkins') 
+        DOCKER_IMAGE_NAME = 'joshua192/nodejsapi' 
+        DOCKER_IMAGE_TAG = 'latest' 
+    }
+
     stages {
         stage('Clone Repository') {
             steps {
@@ -10,20 +16,32 @@ pipeline {
             }
         }
 
-        stage('Deploy Nginx with Web App') {
+        stage('Install Dependencies') {
+            steps {
+                sh 'npm install'
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                sh 'npm test'
+            }
+        }
+
+        stage('Build Docker Image') {
             steps {
                 script {
-                    sh 'docker compose down'
-                    sh 'docker compose up -d nginx'
+                    dockerImage = docker.build("${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}")
                 }
             }
         }
 
-        stage('Test Nginx') {
+        stage('Push Docker Image to Docker Hub') {
             steps {
                 script {
-                    sh 'sleep 5' 
-                    sh 'curl -I http://localhost:6060 || exit 1'
+                    docker.withRegistry('https://registry.hub.docker.com', DOCKER_HUB_CREDENTIALS) {
+                        dockerImage.push()
+                    }
                 }
             }
         }
